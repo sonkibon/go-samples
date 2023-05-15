@@ -34,6 +34,15 @@ type marshalFieldTag struct {
 	StringSlice []string `yaml:"string_array"`
 }
 
+// marshalOmitempty is a struct to marshal a YAML document with struct fields that have a "yaml" field tag that has been exported and has the "omitempty" flag.
+type marshalOmitempty struct {
+	B           bool     `yaml:"bool,omitempty"`
+	I           int      `yaml:"int,omitempty"`
+	S           string   `yaml:"string,omitempty"`
+	IntSlice    []int    `yaml:"int_array,omitempty"`
+	StringSlice []string `yaml:"string_array,omitempty"`
+}
+
 // marshal is a function that wraps the Marshal function from "gopkg.in/yaml.v3
 func marshal(in interface{}) ([]byte, error) {
 	out, err := yaml.Marshal(in)
@@ -118,4 +127,11 @@ func main() {
 		log.Fatalf("encode: %v", err)
 	}
 	fmt.Printf("Result of marshaling struct without omitempty flag\n%s\n", string(meftOut))
+
+	moe := marshalOmitempty{}
+	moeOut, err := marshal(&moe)
+	if err != nil {
+		log.Fatalf("encode: %v", err)
+	}
+	fmt.Printf("Result of marshaling struct with omitempty flag\n%s\n", string(moeOut))
 }
