@@ -16,6 +16,15 @@ type marshalUnexported struct {
 	stringSlice []string
 }
 
+// marshalNoFieldTag is a struct to marshal YAML documents with exported struct fields.
+type marshalNoFieldTag struct {
+	B           bool
+	I           int
+	S           string
+	IntSlice    []int
+	StringSlice []string
+}
+
 // marshal is a function that wraps the Marshal function from "gopkg.in/yaml.v3
 func marshal(in interface{}) ([]byte, error) {
 	out, err := yaml.Marshal(in)
@@ -48,4 +57,26 @@ func main() {
 		log.Fatalf("encode: %v", err)
 	}
 	fmt.Printf("Result of marshaling a struct that field is not exported\n%s\n", string(muOut))
+
+	mnft := marshalNoFieldTag{
+		B: true,
+		I: 10,
+		S: "hoge",
+		IntSlice: []int{
+			1,
+			2,
+			3,
+		},
+		StringSlice: []string{
+			"aaa",
+			"bbb",
+			"ccc",
+		},
+	}
+
+	mnftOut, err := marshal(&mnft)
+	if err != nil {
+		log.Fatalf("encode: %v", err)
+	}
+	fmt.Printf("Result of marshaling struct without field tag\n%s\n", string(mnftOut))
 }
