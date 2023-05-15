@@ -110,4 +110,12 @@ func main() {
 		log.Fatalf("encode: %v", err)
 	}
 	fmt.Printf("Result of marshaling struct with field tag\n%s\n", string(mftOut))
+
+	meft := marshalFieldTag{}
+
+	meftOut, err := marshal(&meft)
+	if err != nil {
+		log.Fatalf("encode: %v", err)
+	}
+	fmt.Printf("Result of marshaling struct without omitempty flag\n%s\n", string(meftOut))
 }
