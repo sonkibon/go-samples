@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"gopkg.in/yaml.v3"
 )
@@ -41,6 +42,14 @@ type marshalOmitempty struct {
 	S           string   `yaml:"string,omitempty"`
 	IntSlice    []int    `yaml:"int_array,omitempty"`
 	StringSlice []string `yaml:"string_array,omitempty"`
+}
+
+// unmarshalUnexported is a struct to unmarshal YAML documents that do not have exported struct fields.
+type unmarshalUnexported struct {
+	boolean bool     `yaml:"boolean"`
+	integer int      `yaml:"integer"`
+	str     string   `yaml:"str"`
+	array   []string `yaml:"array"`
 }
 
 // marshal is a function that wraps the Marshal function from "gopkg.in/yaml.v3
@@ -143,4 +152,22 @@ func main() {
 		log.Fatalf("encode: %v", err)
 	}
 	fmt.Printf("Result of marshaling struct with omitempty flag\n%s\n", string(moeOut))
+
+	const (
+		fileName = "yaml/sample-1.yaml"
+	)
+
+	b, err := os.ReadFile(fileName)
+	if err != nil {
+		log.Fatalf("os.ReadFile: %v", err)
+	}
+
+	var (
+		uu unmarshalUnexported
+	)
+
+	if err := unmarshal(b, &uu); err != nil {
+		log.Fatalf("decode: %v", err)
+	}
+	fmt.Printf("Result of unmarshal of yaml document to unmarshalUnexported struct\n%#v\n", uu)
 }
