@@ -60,6 +60,14 @@ type unmarshalNoFieldTag struct {
 	Array   []string
 }
 
+// unmarshalFieldTag is a struct for exporting and unmarshaling into a YAML document with a struct fields with a "yaml" field tag.
+type unmarshalFieldTag struct {
+	Boolean bool     `yaml:"boolean"`
+	Integer int      `yaml:"integer"`
+	Str     string   `yaml:"str"`
+	Array   []string `yaml:"array"`
+}
+
 // marshal is a function that wraps the Marshal function from "gopkg.in/yaml.v3
 func marshal(in interface{}) ([]byte, error) {
 	out, err := yaml.Marshal(in)
@@ -173,6 +181,7 @@ func main() {
 	var (
 		uu   unmarshalUnexported
 		unft unmarshalNoFieldTag
+		uft  unmarshalFieldTag
 	)
 
 	if err := unmarshal(b, &uu); err != nil {
@@ -184,4 +193,9 @@ func main() {
 		log.Fatalf("decode: %v", err)
 	}
 	fmt.Printf("Result of unmarshal of yaml document to unmarshalNoFieldTag struct\n%#v\n", unft)
+
+	if err := unmarshal(b, &uft); err != nil {
+		log.Fatalf("decode: %v", err)
+	}
+	fmt.Printf("Result of unmarshal of yaml document to unmarshalFieldTagNoFieldTag struct\n%#v\n", uft)
 }
