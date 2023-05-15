@@ -1,0 +1,6 @@
+boolean: true
+integer: 1
+str: "hoge"
+array:
+  - "fizz"
+  - "buzz"
