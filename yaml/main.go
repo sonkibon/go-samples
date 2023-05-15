@@ -53,6 +53,15 @@ func marshal(in interface{}) ([]byte, error) {
 	return out, nil
 }
 
+// unmarshal is a function that wraps the Unmarshal function from "gopkg.in/yaml.v3
+func unmarshal(in []byte, out interface{}) error {
+	if err := yaml.Unmarshal(in, out); err != nil {
+		return fmt.Errorf("yaml.Unmarshal: %w", err)
+	}
+
+	return nil
+}
+
 func main() {
 	mu := marshalUnexported{
 		b: true,
