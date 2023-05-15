@@ -178,7 +178,7 @@ func main() {
 	fmt.Printf("Result of marshaling struct with omitempty flag\n%s\n", string(moeOut))
 
 	const (
-		fileName = "yaml/sample-1.yaml"
+		fileName = "yaml/sample.yaml"
 	)
 
 	b, err := os.ReadFile(fileName)
