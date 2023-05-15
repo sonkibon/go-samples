@@ -25,6 +25,15 @@ type marshalNoFieldTag struct {
 	StringSlice []string
 }
 
+// marshalFieldTag is a struct for exporting and marshaling into a YAML document with a struct fields with a "yaml" field tag.
+type marshalFieldTag struct {
+	B           bool     `yaml:"bool"`
+	I           int      `yaml:"int"`
+	S           string   `yaml:"string"`
+	IntSlice    []int    `yaml:"int_array"`
+	StringSlice []string `yaml:"string_array"`
+}
+
 // marshal is a function that wraps the Marshal function from "gopkg.in/yaml.v3
 func marshal(in interface{}) ([]byte, error) {
 	out, err := yaml.Marshal(in)
@@ -79,4 +88,26 @@ func main() {
 		log.Fatalf("encode: %v", err)
 	}
 	fmt.Printf("Result of marshaling struct without field tag\n%s\n", string(mnftOut))
+
+	mft := marshalFieldTag{
+		B: true,
+		I: 10,
+		S: "hoge",
+		IntSlice: []int{
+			1,
+			2,
+			3,
+		},
+		StringSlice: []string{
+			"aaa",
+			"bbb",
+			"ccc",
+		},
+	}
+
+	mftOut, err := marshal(&mft)
+	if err != nil {
+		log.Fatalf("encode: %v", err)
+	}
+	fmt.Printf("Result of marshaling struct with field tag\n%s\n", string(mftOut))
 }
