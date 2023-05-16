@@ -3,9 +3,11 @@ package pubsub
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 )
 
 // Queue provides a PubsubClient for a specific queue.
@@ -25,4 +27,19 @@ func (q *Queue) Exist(ctx context.Context) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// Send delivers a message to the specified queue.
+func (q *Queue) Send(ctx context.Context, message string, attributes map[string]types.MessageAttributeValue) error {
+	m, err := q.client.SQS.SendMessage(ctx, &sqs.SendMessageInput{
+		MessageBody:       aws.String(message),
+		MessageAttributes: attributes,
+		QueueUrl:          &q.queueUrl,
+	})
+	if err != nil {
+		return fmt.Errorf("q.client.SQS.SendMessage: %w", err)
+	}
+
+	log.Default().Printf("message id: %s", *m.MessageId)
+	return nil
 }
