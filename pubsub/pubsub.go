@@ -67,3 +67,26 @@ func (c *PubsubClient) NewQueueContext(ctx context.Context, queueArn string) (*Q
 		queueArn:  queueArn,
 	}, nil
 }
+
+// NewQueue calls the NewTopicContext method.
+func (c *PubsubClient) NewTopic(topicArn string) (*Topic, error) {
+	return c.NewTopicContext(context.Background(), topicArn)
+}
+
+// NewTopicContext returns an initialized topic client based on the topic arn.
+func (c *PubsubClient) NewTopicContext(ctx context.Context, topicArn string) (*Topic, error) {
+	parse, err := arn.Parse(topicArn)
+	if err != nil {
+		return nil, fmt.Errorf("arn.Parse(%s) : %w", topicArn, err)
+	}
+
+	if _, err = c.SNS.GetTopicAttributes(ctx, &sns.GetTopicAttributesInput{TopicArn: &topicArn}); err != nil {
+		return nil, fmt.Errorf("c.SNS.GetTopicAttributes: %w", err)
+	}
+
+	return &Topic{
+		client:    c,
+		topicName: parse.Resource,
+		topicArn:  topicArn,
+	}, nil
+}
