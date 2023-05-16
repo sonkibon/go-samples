@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws/arn"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+	"github.com/aws/aws-sdk-go-v2/service/sqs/types"
 )
 
 const (
@@ -171,4 +172,41 @@ func (c *PubsubClient) convertOldOpts(in map[string]*string) map[string]string {
 	}
 
 	return out
+}
+
+// CreateQueue calls the CreateQueueContext method.
+func (c *PubsubClient) CreateQueue(queueName string, opts map[string]*string) (*Queue, error) {
+	return c.CreateQueueContext(context.Background(), queueName, opts)
+}
+
+// CreateQueueContext returns an initialized queue client based on the queue name and options.
+func (c *PubsubClient) CreateQueueContext(ctx context.Context, queueName string, opts map[string]*string) (*Queue, error) {
+	queue, err := c.SQS.CreateQueue(
+		ctx,
+		&sqs.CreateQueueInput{
+			QueueName:  &queueName,
+			Attributes: c.convertOldOpts(opts),
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("c.SQS.CreateQueue(queueName=%s, attributes=%+v) : %w", queueName, opts, err)
+	}
+
+	atr, err := c.SQS.GetQueueAttributes(
+		ctx,
+		&sqs.GetQueueAttributesInput{
+			AttributeNames: []types.QueueAttributeName{types.QueueAttributeNameQueueArn},
+			QueueUrl:       queue.QueueUrl,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("c.SQS.GetQueueAttributes(queueUrl=%v) : %w", queue.QueueUrl, err)
+	}
+
+	return &Queue{
+		client:    c,
+		queueArn:  atr.Attributes[NameQueueArn],
+		queueName: queueName,
+		queueUrl:  *queue.QueueUrl,
+	}, nil
 }
