@@ -225,3 +225,23 @@ func (c *PubsubClient) CreateQueueWithDLQ(queueName string, dlq Queue, maxReceiv
 	opts[QueueAttributeRedrivePolicy] = aws.String(string(redrivePolicy))
 	return c.CreateQueue(queueName, opts)
 }
+
+// CreateTopic calls the CreateTopicContext method.
+func (c *PubsubClient) CreateTopic(topicName string, opts map[string]*string) (*Topic, error) {
+	return c.CreateTopicContext(context.Background(), topicName, opts)
+}
+
+// CreateTopicContext returns an initialized topic client based on the topic name and options.
+func (c *PubsubClient) CreateTopicContext(ctx context.Context, topicName string, opts map[string]*string) (*Topic, error) {
+	topic, err := c.SNS.CreateTopic(
+		ctx,
+		&sns.CreateTopicInput{
+			Name:       &topicName,
+			Attributes: c.convertOldOpts(opts),
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("c.SNS.CreateTopic: %w", err)
+	}
+	return &Topic{client: c, topicName: topicName, topicArn: *topic.TopicArn}, nil
+}
