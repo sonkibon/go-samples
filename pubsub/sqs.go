@@ -2,6 +2,7 @@ package pubsub
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -17,6 +18,21 @@ type Queue struct {
 	queueArn  string
 	queueName string
 	queueUrl  string
+}
+
+// SNSEvent is the struct to map when sending messages to the queue via topic.
+type SNSEvent struct {
+	Type              string
+	MessageId         string
+	Message           string
+	Token             string
+	TopicArn          string
+	SubscribeURL      *string
+	Timestamp         string
+	Signature         string
+	SignatureVersion  string
+	SigningCertURL    string
+	MessageAttributes map[string]map[string]string
 }
 
 // Exist returns whether the topic exists or not.
@@ -49,6 +65,19 @@ func (q *Queue) Send(ctx context.Context, message string, attributes map[string]
 func (q *Queue) Consume(ctx context.Context, handler func(c context.Context, message string) (bool, error)) error {
 	return q.consume(ctx, func(ctx context.Context, m types.Message) (bool, error) {
 		return handler(ctx, *m.Body)
+	})
+}
+
+// ConsumeViaSNS maps the message to an SNSEvent struct and calls the consume method.
+func (q *Queue) ConsumeViaSNS(ctx context.Context, handler func(c context.Context, event SNSEvent) (retryable bool, err error)) error {
+	return q.consume(ctx, func(ctx context.Context, m types.Message) (bool, error) {
+		var event SNSEvent
+		err := json.Unmarshal([]byte(*m.Body), &event)
+		if err != nil {
+			log.Default().Printf("failed to unmarshal json, body: %s", *m.Body)
+			return true, fmt.Errorf("json.Unmarshal: %w", err)
+		}
+		return handler(ctx, event)
 	})
 }
 
