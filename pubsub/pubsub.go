@@ -2,12 +2,26 @@ package pubsub
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/arn"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
+)
+
+const (
+	NameQueueArn                = "QueueArn"
+	NameTopicArn                = "TopicArn"
+	QueueAttributeRedrivePolicy = "RedrivePolicy"
+)
+
+var (
+	SubscriptionProtocolSQS   = aws.String("sqs")
+	SubscriptionProtocolHTTP  = aws.String("http")
+	SubscriptionProtocolHTTPS = aws.String("https")
 )
 
 // sqsConfig represents sqs config.
@@ -89,4 +103,58 @@ func (c *PubsubClient) NewTopicContext(ctx context.Context, topicArn string) (*T
 		topicName: parse.Resource,
 		topicArn:  topicArn,
 	}, nil
+}
+
+// NewSubscription calls the NewSubscriptionContext method.
+func (c *PubsubClient) NewSubscription(subscriptionArn string) (*Subscription, error) {
+	return c.NewSubscriptionContext(context.Background(), subscriptionArn)
+}
+
+// NewSubscriptionContext returns an initialized subscription client based on the subscription arn.
+func (c *PubsubClient) NewSubscriptionContext(ctx context.Context, subscriptionArn string) (*Subscription, error) {
+	if _, err := arn.Parse(subscriptionArn); err != nil {
+		return nil, fmt.Errorf("arn.Parse: %w", err)
+	}
+
+	atr, err := c.SNS.GetSubscriptionAttributes(
+		ctx,
+		&sns.GetSubscriptionAttributesInput{
+			SubscriptionArn: &subscriptionArn,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("c.SNS.GetSubscriptionAttributes(%s) : %w", subscriptionArn, err)
+	}
+	topic, err := c.NewTopic(atr.Attributes[NameTopicArn])
+	if err != nil {
+		return nil, fmt.Errorf("c.NewTopic: %w", err)
+	}
+
+	subscriptions, err := c.SNS.ListSubscriptionsByTopic(
+		ctx,
+		&sns.ListSubscriptionsByTopicInput{
+			TopicArn: &topic.topicArn,
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("c.SNS.ListSubscriptionsByTopic(%s) : %w", topic.topicArn, err)
+	}
+
+	for _, subscription := range subscriptions.Subscriptions {
+		if *subscription.Protocol == *SubscriptionProtocolSQS && *subscription.SubscriptionArn == subscriptionArn {
+			queue, err := c.NewQueue(*subscription.Endpoint)
+			if err != nil {
+				return nil, fmt.Errorf("c.NewQueue(%v) : %w", subscription.Endpoint, err)
+			}
+
+			return &Subscription{
+				client:          c,
+				subscriptionArn: subscriptionArn,
+				topic:           *topic,
+				queue:           *queue,
+			}, nil
+		}
+	}
+
+	return nil, errors.New("subscription not found")
 }
