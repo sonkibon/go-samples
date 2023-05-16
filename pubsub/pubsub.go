@@ -2,6 +2,7 @@ package pubsub
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -209,4 +210,18 @@ func (c *PubsubClient) CreateQueueContext(ctx context.Context, queueName string,
 		queueName: queueName,
 		queueUrl:  *queue.QueueUrl,
 	}, nil
+}
+
+func (c *PubsubClient) CreateQueueWithDLQ(queueName string, dlq Queue, maxReceive int64, opts map[string]*string) (*Queue, error) {
+	policy := struct {
+		MaxReceiveCount     int64  `json:"maxReceiveCount"`
+		DeadLetterTargetArn string `json:"deadLetterTargetArn"`
+	}{}
+
+	policy.DeadLetterTargetArn = dlq.queueArn
+	policy.MaxReceiveCount = maxReceive
+	redrivePolicy, _ := json.Marshal(policy)
+
+	opts[QueueAttributeRedrivePolicy] = aws.String(string(redrivePolicy))
+	return c.CreateQueue(queueName, opts)
 }
