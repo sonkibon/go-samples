@@ -1,8 +1,11 @@
 package pubsub
 
 import (
+	"context"
+	"fmt"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws/arn"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/aws-sdk-go-v2/service/sqs"
 )
@@ -30,5 +33,37 @@ func NewPubsubClient(sqs *sqs.Client, sns *sns.Client, cfg sqsConfig) (*PubsubCl
 		SQS:    sqs,
 		SNS:    sns,
 		Config: cfg,
+	}, nil
+}
+
+// NewQueue calls the NewQueueContext method.
+func (c *PubsubClient) NewQueue(queueArn string) (*Queue, error) {
+	return c.NewQueueContext(context.Background(), queueArn)
+}
+
+// NewQueueContext returns an initialized queue client based on the queue arn.
+func (c *PubsubClient) NewQueueContext(ctx context.Context, queueArn string) (*Queue, error) {
+	parse, err := arn.Parse(queueArn)
+	if err != nil {
+		return nil, fmt.Errorf("arn.Parse: %w", err)
+	}
+
+	queueUrl, err := c.SQS.GetQueueUrl(
+		ctx,
+		&sqs.GetQueueUrlInput{
+			QueueName:              &parse.Resource,
+			QueueOwnerAWSAccountId: &parse.AccountID,
+		},
+	)
+	if err != nil {
+		return nil,
+			fmt.Errorf("c.SQS.GetQueueUrl: %w", err)
+	}
+
+	return &Queue{
+		client:    c,
+		queueName: parse.Resource,
+		queueUrl:  *queueUrl.QueueUrl,
+		queueArn:  queueArn,
 	}, nil
 }
