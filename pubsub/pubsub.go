@@ -245,3 +245,32 @@ func (c *PubsubClient) CreateTopicContext(ctx context.Context, topicName string,
 	}
 	return &Topic{client: c, topicName: topicName, topicArn: *topic.TopicArn}, nil
 }
+
+// CreateSubscription calls the CreateSubscriptionContext method.
+func (c *PubsubClient) CreateSubscription(topic *Topic, queue *Queue, opts map[string]*string) (*Subscription, error) {
+	return c.CreateSubscriptionContext(context.Background(), topic, queue, opts)
+}
+
+// CreateSubscriptionContext returns an initialized subscription client based on the topic, queue and options.
+func (c *PubsubClient) CreateSubscriptionContext(ctx context.Context, topic *Topic, queue *Queue, opts map[string]*string) (*Subscription, error) {
+	subscription, err := c.SNS.Subscribe(
+		ctx,
+		&sns.SubscribeInput{
+			Protocol:              SubscriptionProtocolSQS,
+			ReturnSubscriptionArn: true,
+			Endpoint:              &queue.queueArn,
+			TopicArn:              &topic.topicArn,
+			Attributes:            c.convertOldOpts(opts),
+		},
+	)
+	if err != nil {
+		return nil, fmt.Errorf("c.SNS.Subscribe(queueArn=%s, topicArn=%s, opts=%+v) : %w", queue.queueArn, topic.topicArn, opts, err)
+	}
+
+	return &Subscription{
+		client:          c,
+		subscriptionArn: *subscription.SubscriptionArn,
+		topic:           *topic,
+		queue:           *queue,
+	}, nil
+}
