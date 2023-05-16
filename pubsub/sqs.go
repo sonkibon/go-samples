@@ -35,6 +35,35 @@ type SNSEvent struct {
 	MessageAttributes map[string]map[string]string
 }
 
+// S3Event is the struct to map when sending messages to the queue via s3.
+type S3Event struct {
+	Records []struct {
+		AwsRegion         string                 `json:"awsRegion"`
+		EventName         string                 `json:"eventName"`
+		EventTime         string                 `json:"eventTime"`
+		EventSource       string                 `json:"eventSource"`
+		EventVersion      string                 `json:"eventVersion"`
+		UserIdentity      map[string]string      `json:"userIdentity"`
+		RequestParameters map[string]interface{} `json:"requestParameters"`
+		ResponseElements  map[string]interface{} `json:"responseElements"`
+		S3                struct {
+			S3SchemaVersion string `json:"s3SchemaVersion"`
+			ConfigurationId string `json:"configurationId"`
+			Bucket          struct {
+				Name          string                 `json:"name"`
+				OwnerIdentity map[string]interface{} `json:"ownerIdentity"`
+				ARN           string                 `json:"arn"`
+			} `json:"bucket"`
+			Object struct {
+				Key       string `json:"key"`
+				Size      int64  `json:"size"`
+				ETag      string `json:"etag"`
+				Sequencer string `json:"sequencer"`
+			} `json:"object"`
+		} `json:"s3"`
+	}
+}
+
 // Exist returns whether the topic exists or not.
 func (q *Queue) Exist(ctx context.Context) (bool, error) {
 	if _, err := q.client.SQS.GetQueueAttributes(ctx, &sqs.GetQueueAttributesInput{
@@ -72,6 +101,19 @@ func (q *Queue) Consume(ctx context.Context, handler func(c context.Context, mes
 func (q *Queue) ConsumeViaSNS(ctx context.Context, handler func(c context.Context, event SNSEvent) (retryable bool, err error)) error {
 	return q.consume(ctx, func(ctx context.Context, m types.Message) (bool, error) {
 		var event SNSEvent
+		err := json.Unmarshal([]byte(*m.Body), &event)
+		if err != nil {
+			log.Default().Printf("failed to unmarshal json, body: %s", *m.Body)
+			return true, fmt.Errorf("json.Unmarshal: %w", err)
+		}
+		return handler(ctx, event)
+	})
+}
+
+// ConsumeViaS3 maps the message to an S3Event struct and calls the consume method.
+func (q *Queue) ConsumeViaS3(ctx context.Context, handler func(c context.Context, event S3Event) (retryable bool, err error)) error {
+	return q.consume(ctx, func(ctx context.Context, m types.Message) (bool, error) {
+		var event S3Event
 		err := json.Unmarshal([]byte(*m.Body), &event)
 		if err != nil {
 			log.Default().Printf("failed to unmarshal json, body: %s", *m.Body)
