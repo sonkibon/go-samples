@@ -158,3 +158,17 @@ func (c *PubsubClient) NewSubscriptionContext(ctx context.Context, subscriptionA
 
 	return nil, errors.New("subscription not found")
 }
+
+// Change old opts format to new format
+func (c *PubsubClient) convertOldOpts(in map[string]*string) map[string]string {
+	out := make(map[string]string)
+	for k, v := range in {
+		if v == nil {
+			out[k] = ""
+		} else {
+			out[k] = *v
+		}
+	}
+
+	return out
+}
