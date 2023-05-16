@@ -45,6 +45,13 @@ func (q *Queue) Send(ctx context.Context, message string, attributes map[string]
 	return nil
 }
 
+// Consume calls the consume method.
+func (q *Queue) Consume(ctx context.Context, handler func(c context.Context, message string) (bool, error)) error {
+	return q.consume(ctx, func(ctx context.Context, m types.Message) (bool, error) {
+		return handler(ctx, *m.Body)
+	})
+}
+
 // consume receives a message from a specific queue and executes the argument f function to delete the message.
 // It can also retry by changing the visibility timeout of the specified message in the queue to a new value.
 func (q *Queue) consume(ctx context.Context, f func(context.Context, types.Message) (bool, error)) error {
