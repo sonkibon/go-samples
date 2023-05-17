@@ -45,6 +45,8 @@ type marshalOmitempty struct {
 }
 
 // unmarshalUnexported is a struct to unmarshal YAML documents that do not have exported struct fields.
+//
+//nolint:all
 type unmarshalUnexported struct {
 	boolean bool     `yaml:"boolean"`
 	integer int      `yaml:"integer"`
@@ -53,6 +55,8 @@ type unmarshalUnexported struct {
 }
 
 // unmarshalNoFieldTag is a struct to unmarshal YAML documents with exported struct fields.
+//
+//nolint:all
 type unmarshalNoFieldTag struct {
 	Boolean bool
 	Integer int
@@ -61,6 +65,8 @@ type unmarshalNoFieldTag struct {
 }
 
 // unmarshalFieldTag is a struct for exporting and unmarshaling into a YAML document with a struct fields with a "yaml" field tag.
+//
+//nolint:all
 type unmarshalFieldTag struct {
 	Boolean bool     `yaml:"boolean"`
 	Integer int      `yaml:"integer"`
@@ -69,6 +75,8 @@ type unmarshalFieldTag struct {
 }
 
 // unmarshalFieldTagNoFieldTag is a struct to unmarshal YAML documents with exported struct fields with different field name.
+//
+//nolint:all
 type unmarshalNoFieldTagWithDifferentFieldName struct {
 	Hoge bool
 	Fuga int
@@ -76,7 +84,7 @@ type unmarshalNoFieldTagWithDifferentFieldName struct {
 	Foo  []string
 }
 
-// marshal is a function that wraps the Marshal function from "gopkg.in/yaml.v3
+// marshal is a function that wraps the Marshal function from "gopkg.in/yaml.v3"
 func marshal(in interface{}) ([]byte, error) {
 	out, err := yaml.Marshal(in)
 	if err != nil {
@@ -86,7 +94,7 @@ func marshal(in interface{}) ([]byte, error) {
 	return out, nil
 }
 
-// unmarshal is a function that wraps the Unmarshal function from "gopkg.in/yaml.v3
+// unmarshal is a function that wraps the Unmarshal function from "gopkg.in/yaml.v3"
 func unmarshal(in []byte, out interface{}) error {
 	if err := yaml.Unmarshal(in, out); err != nil {
 		return fmt.Errorf("yaml.Unmarshal: %w", err)
